@@ -257,11 +257,27 @@ class Prompt:
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.info("Initializing Prompt")
         self.prompt = """
-        A model that can assess newly submitted menus from kitchens. The model should review 
-        the menus based on factors such as dish uniqueness, ingredient availability, pricing, 
-        and compliance with regulatory standards. It should also determine the cuisine of each 
-        menu using information from the name, description and ingredients. It should highlight 
-        any discrepancies or issues for manual review
+
+        Generate structured data for a disaster management system that dynamically allocates resources in response to a crisis event, ensuring no duplicates. 
+        The output should include the following components, formatted as JSON: 
+
+        1. input_data: - event_reports: An array of objects detailing various reports from multiple sources, including: - source (e.g., 'weather_station', 
+        'emergency_calls', 'social_media') - timestamp (ISO 8601 format) - data: An object containing relevant metrics such as: - For weather stations: rainfall_mm, 
+        wind_speed_kmh, pressure_hpa - For emergency calls: call_volume, flood_reports, rescue_requests - For social media: flood_mentions, evacuation_requests, 
+        damage_reports - geospatial_data: Information about the affected area, including: - affected_area (type and coordinates in a Polygon format) - population_density 
+        (total population and distribution across urban, suburban, and rural areas) - critical_infrastructure: An array of objects detailing critical facilities 
+        (type, location, and relevant capacity). - resource_inventory: An array detailing available resources, including type, availability, 
+        and capacity. - historical_context: Information about similar past events and flood-prone areas, including their risk levels. 
+       
+        2. output_data: - incident_id: A unique identifier for the incident. - timestamp: The timestamp of the output data. - crisis_type: The type of crisis 
+        (e.g., hurricane, flood). - severity_score: A score reflecting the severity of the situation (0-10 scale). - affected_area: Details about the geographical impact,
+        including center coordinates and radius. - population_at_risk: Estimated number of individuals at risk. - current_status: A description of the current 
+        situation and key threats. - resource_recommendations: An array of resource needs with quantities, priorities, and deployment locations. - priority_actions: An array of recommended actions, 
+        their descriptions, responsible agencies, and estimated execution times. - potential_escalations: Scenarios for possible escalation with probabilities, 
+        impact scores, and additional resource needs. - data_sources_used: A list of data sources that informed the output. - confidence_score: A score indicating the 
+        confidence level of the assessment (0-1 scale). Ensure the generated data is realistic and reflects the complexities involved in disaster management, 
+        while avoiding duplicates.
+        
         """.strip()
         self.logger.debug("Prompt initialized with content")
 
