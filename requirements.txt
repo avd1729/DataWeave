@@ -3,3 +3,4 @@ apache-airflow
 pandas 
 groq
 python-dotenv
+datasets

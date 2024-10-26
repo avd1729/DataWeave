@@ -5,6 +5,8 @@ import logging
 import pandas as pd
 from groq import Groq
 from dotenv import load_dotenv
+import datetime
+import json
 
 # Configure logging
 logging.basicConfig(
@@ -16,9 +18,53 @@ logging.basicConfig(
     ]
 )
 
-logger = logging.getLogger(__name__)
-logger.info("Starting Data extraction")
+# logger = logging.getLogger(__name__)
+# logger.info("Starting Data extraction")
 
+
+class JSONExporter:
+    """Class to handle JSON file operations"""
+    def __init__(self):
+        self.logger = logging.getLogger(self.__class__.__name__)
+        self.output_dir = 'generated_data'
+        self._ensure_output_directory()
+
+    def _ensure_output_directory(self):
+        """Ensure output directory exists"""
+        if not os.path.exists(self.output_dir):
+            os.makedirs(self.output_dir)
+            self.logger.info(f"Created output directory: {self.output_dir}")
+
+    def save_to_json(self, data, filename=None):
+        """Save data to JSON file"""
+        try:
+            if filename is None:
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                filename = f'menu_examples_{timestamp}.json'
+            
+            filepath = os.path.join(self.output_dir, filename)
+            
+            # Convert DataFrame to JSON structure
+            if isinstance(data, pd.DataFrame):
+                json_data = []
+                for _, row in data.iterrows():
+                    json_data.append({
+                        'prompt': row['prompt'],
+                        'response': row['response']
+                    })
+            else:
+                json_data = data
+
+            # Save with pretty printing
+            with open(filepath, 'w', encoding='utf-8') as f:
+                json.dump(json_data, f, indent=2, ensure_ascii=False)
+            
+            self.logger.info(f"Successfully saved data to {filepath}")
+            return filepath
+        
+        except Exception as e:
+            self.logger.error(f"Failed to save JSON file: {str(e)}", exc_info=True)
+            raise
 
 class DataGenerator:
     def __init__(self, api_key=None, model="llama3-8b-8192", temperature=0.5):
@@ -36,7 +82,26 @@ class DataGenerator:
         self.model = model
         self.temperature = temperature
         self.examples = []
+        self.json_exporter = JSONExporter()
         self.logger.info(f"Initialized with model: {model}, temperature: {temperature}")
+
+    def generate_and_save_examples(self, prompt, number_of_examples, filename=None):
+        """Generate examples and save to JSON"""
+        self.logger.info(f"Starting generation process for {number_of_examples} examples")
+        
+        try:
+            # Generate and parse examples
+            df = self.generate_and_parse_examples(prompt, number_of_examples)
+            
+            # Save to JSON
+            json_path = self.json_exporter.save_to_json(df, filename)
+            
+            self.logger.info(f"Complete process finished. Data saved to {json_path}")
+            return df, json_path
+            
+        except Exception as e:
+            self.logger.error("Failed in generate_and_save_examples", exc_info=True)
+            raise
 
     def generate_and_parse_examples(self, prompt, number_of_examples):
         """Generate and parse examples in one step"""
@@ -201,29 +266,34 @@ class Prompt:
 
 
 def main():
-    # logger = logging.getLogger(__name__)
-    # logger.info("Starting main execution")
+    logger = logging.getLogger(__name__)
+    logger.info("Starting main execution")
     
     try:
         # Initialize classes
         prompt = Prompt()
         generator = DataGenerator()
         
-        # Generate and parse examples in one step
-        df = generator.generate_and_parse_examples(prompt.prompt, number_of_examples=5)
+        # Generate examples and save to JSON
+        df, json_path = generator.generate_and_save_examples(
+            prompt=prompt.prompt,
+            number_of_examples=5,
+            filename="menu_examples.json"
+        )
         
         # Display results
         logger.info(f'Generated {len(df)} unique examples')
         print(f'\nGenerated {len(df)} unique examples. Here are the first few:')
         print(df.head())
+        print(f'\nData saved to: {json_path}')
         
         logger.info("Main execution completed successfully")
-        return df
+        return df, json_path
     
     except Exception as e:
         logger.error("Main execution failed", exc_info=True)
         raise
 
 
-# if __name__ == "__main__":
-#     main()
+if __name__ == "__main__":
+    main()
