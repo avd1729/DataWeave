@@ -1,5 +1,6 @@
-from airflow.decorators import dag, task
-from pendulum import datetime
+from airflow import DAG
+from airflow.decorators import task
+from airflow.utils.dates import days_ago
 from utils import data_extraction , data_transformation , data_loading
 import logging
 
@@ -15,17 +16,15 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 logger.info("Starting dag...")
 
+default_args={
+    'owner':'airflow',
+    'start_date':days_ago(1)
+}
 
-@dag(
-    start_date=datetime(2024, 11, 19),
-    schedule="@daily",
-    catchup=False,
-    doc_md=__doc__,
-    default_args={"owner": "Astro", "retries": 3},
-    tags=["data-gen"],
-)
-
-def main():
+with DAG(dag_id='etl_pipeline',
+         default_args=default_args,
+         schedule_interval='@daily',
+         catchup=False) as dags:
     
     @task
     def extract():
@@ -39,7 +38,7 @@ def main():
             df, json_path = generator.generate_and_save_examples(
                 prompt=prompt.prompt,
                 number_of_examples=5,
-                filename="data/extracted_data/data.json"
+                filename="data.json"
             )
             logger.info("Data extraction completed successfully!")
             return df , json_path
@@ -77,6 +76,4 @@ def main():
             logger.error("Data Loading failed!", exc_info=True)
             raise
 
-        
-        
-main()
+    extract() >> transform() >> load()

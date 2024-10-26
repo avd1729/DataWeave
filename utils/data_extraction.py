@@ -28,7 +28,7 @@ class JSONExporter:
     """Class to handle JSON file operations"""
     def __init__(self):
         self.logger = logging.getLogger(self.__class__.__name__)
-        self.output_dir = 'generated_data'
+        self.output_dir = 'data/extracted_data'
         self._ensure_output_directory()
 
     def _ensure_output_directory(self):
@@ -41,8 +41,7 @@ class JSONExporter:
         """Save data to JSON file"""
         try:
             if filename is None:
-                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                filename = f'menu_examples_{timestamp}.json'
+                filename = f'data.json'
             
             filepath = os.path.join(self.output_dir, filename)
             
