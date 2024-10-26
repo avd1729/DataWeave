@@ -1,0 +1,229 @@
+import os
+import random
+import time
+import logging
+import pandas as pd
+from groq import Groq
+from dotenv import load_dotenv
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('logs/data_generator.log'),
+        logging.StreamHandler()
+    ]
+)
+
+logger = logging.getLogger(__name__)
+logger.info("Starting Data extraction")
+
+
+class DataGenerator:
+    def __init__(self, api_key=None, model="llama3-8b-8192", temperature=0.5):
+        """Initialize the generator with API credentials and parameters"""
+        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger.info("Initializing DataGenerator")
+        
+        load_dotenv()
+        self.api_key = api_key or os.getenv("GROQ_API_KEY")
+        if not self.api_key:
+            self.logger.error("No API key found")
+            raise ValueError("API key is required")
+            
+        self.client = Groq(api_key=self.api_key)
+        self.model = model
+        self.temperature = temperature
+        self.examples = []
+        self.logger.info(f"Initialized with model: {model}, temperature: {temperature}")
+
+    def generate_and_parse_examples(self, prompt, number_of_examples):
+        """Generate and parse examples in one step"""
+        self.logger.info(f"Starting generation and parsing of {number_of_examples} examples")
+        
+        try:
+            # Generate examples
+            self.generate_examples(prompt, number_of_examples)
+            
+            # Parse examples
+            df = self.parse_examples()
+            
+            self.logger.info(f"Successfully generated and parsed {len(df)} unique examples")
+            return df
+            
+        except Exception as e:
+            self.logger.error("Failed to generate and parse examples", exc_info=True)
+            raise
+
+    def generate_single_example(self, prompt, prev_examples):
+        """Generate a single example using Groq API"""
+        self.logger.info("Generating single example")
+        max_retries = 3
+        retry_delay = 1
+        retry_count = 0
+
+        while retry_count < max_retries:
+            try:
+                messages = self._prepare_messages(prompt, prev_examples)
+                response = self._call_api(messages)
+                
+                if self._is_valid_response(response):
+                    self.logger.info("Successfully generated example")
+                    return response
+                
+                self.logger.warning(f"Invalid response format. Retry {retry_count + 1}/{max_retries}")
+                retry_count += 1
+                time.sleep(retry_delay)
+                
+            except Exception as e:
+                self.logger.error(f"Error generating example: {str(e)}", exc_info=True)
+                retry_count += 1
+                time.sleep(retry_delay)
+        
+        self.logger.error("Maximum retries exceeded. Failed to generate example")
+        return None
+
+    def _prepare_messages(self, prompt, prev_examples):
+        """Prepare messages for API call"""
+        self.logger.debug("Preparing messages for API call")
+        messages = [
+            {
+                "role": "user",
+                "content": f'Now, generate a prompt/response pair for `{prompt}`. Do so in the exact format requested:\n```\n<prompt>prompt</prompt>\n<response>response_goes_here</response>\n```\n\nOnly one prompt/response pair should be generated per turn.'
+            }
+        ]
+
+        if prev_examples:
+            sample_size = min(10, len(prev_examples))
+            self.logger.debug(f"Including {sample_size} previous examples")
+            sample_examples = random.sample(prev_examples, sample_size)
+            for example in sample_examples:
+                messages.append({"role": "assistant", "content": example})
+                messages.append({"role": "user", "content": 'Now, generate another prompt/response pair. Make it unique.'})
+        
+        return messages
+
+    def _call_api(self, messages):
+        """Make the API call to Groq"""
+        self.logger.debug("Making API call to Groq")
+        try:
+            chat_completion = self.client.chat.completions.create(
+                messages=messages,
+                model=self.model,
+                temperature=self.temperature,
+            )
+            self.logger.debug("API call successful")
+            return chat_completion.choices[0].message.content
+        except Exception as e:
+            self.logger.error(f"API call failed: {str(e)}", exc_info=True)
+            raise
+
+    def _is_valid_response(self, response):
+        """Check if the response contains required tags"""
+        is_valid = response and '<prompt>' in response and '<response>' in response
+        if not is_valid:
+            self.logger.warning("Invalid response format detected")
+        return is_valid
+
+    def generate_examples(self, prompt, number_of_examples):
+        """Generate multiple examples"""
+        self.logger.info(f"Starting generation of {number_of_examples} examples")
+        self.examples = []
+        
+        for i in range(number_of_examples):
+            self.logger.info(f'Generating example {i + 1}/{number_of_examples}')
+            example = self.generate_single_example(prompt, self.examples)
+            if example:
+                self.examples.append(example)
+                self.logger.debug(f"Example {i + 1} generated successfully")
+            else:
+                self.logger.error(f"Failed to generate example {i + 1}")
+        
+        self.logger.info(f"Completed generating examples. Success rate: {len(self.examples)}/{number_of_examples}")
+        return self.examples
+
+    def parse_examples(self):
+        """Parse examples into a DataFrame"""
+        self.logger.info("Parsing examples into DataFrame")
+        prompts = []
+        responses = []
+
+        for i, example in enumerate(self.examples):
+            try:
+                prompt, response = self._extract_prompt_response(example)
+                prompts.append(prompt)
+                responses.append(response)
+                self.logger.debug(f"Successfully parsed example {i + 1}")
+            except (ValueError, IndexError) as e:
+                self.logger.error(f"Error parsing example {i + 1}: {str(e)}", exc_info=True)
+                continue
+
+        df = pd.DataFrame({
+            'prompt': prompts,
+            'response': responses
+        })
+        df_unique = df.drop_duplicates()
+        self.logger.info(f"Created DataFrame with {len(df_unique)} unique examples")
+        return df_unique
+
+    def _extract_prompt_response(self, example):
+        """Extract prompt and response from an example"""
+        self.logger.debug("Extracting prompt and response from example")
+        try:
+            prompt_start = example.index('<prompt>') + len('<prompt>')
+            prompt_end = example.index('</prompt>')
+            prompt = example[prompt_start:prompt_end].strip()
+
+            response_start = example.index('<response>') + len('<response>')
+            response_end = example.index('</response>')
+            response = example[response_start:response_end].strip()
+
+            return prompt, response
+        except (ValueError, IndexError) as e:
+            self.logger.error("Error extracting prompt/response", exc_info=True)
+            raise
+
+
+class Prompt:
+    """Class to handle the menu assessment prompt"""
+    def __init__(self):
+        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger.info("Initializing Prompt")
+        self.prompt = """
+        A model that can assess newly submitted menus from kitchens. The model should review 
+        the menus based on factors such as dish uniqueness, ingredient availability, pricing, 
+        and compliance with regulatory standards. It should also determine the cuisine of each 
+        menu using information from the name, description and ingredients. It should highlight 
+        any discrepancies or issues for manual review
+        """.strip()
+        self.logger.debug("Prompt initialized with content")
+
+
+def main():
+    # logger = logging.getLogger(__name__)
+    # logger.info("Starting main execution")
+    
+    try:
+        # Initialize classes
+        prompt = Prompt()
+        generator = DataGenerator()
+        
+        # Generate and parse examples in one step
+        df = generator.generate_and_parse_examples(prompt.prompt, number_of_examples=5)
+        
+        # Display results
+        logger.info(f'Generated {len(df)} unique examples')
+        print(f'\nGenerated {len(df)} unique examples. Here are the first few:')
+        print(df.head())
+        
+        logger.info("Main execution completed successfully")
+        return df
+    
+    except Exception as e:
+        logger.error("Main execution failed", exc_info=True)
+        raise
+
+
+# if __name__ == "__main__":
+#     main()
