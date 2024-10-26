@@ -2,6 +2,7 @@ from airflow import DAG
 from airflow.decorators import task
 from airflow.utils.dates import days_ago
 from utils import data_extraction , data_transformation , data_loading
+import json
 import logging
 
 logging.basicConfig(
@@ -29,12 +30,11 @@ with DAG(dag_id='etl_pipeline',
     @task
     def extract():
         try:
-            # Initialize classes
+
             prompt = data_extraction.Prompt()
             generator = data_extraction.DataGenerator()
 
             logger.info("Started Data extraction...")
-            # Generate examples and save to JSON
             df, json_path = generator.generate_and_save_examples(
                 prompt=prompt.prompt,
                 number_of_examples=5,
@@ -48,23 +48,29 @@ with DAG(dag_id='etl_pipeline',
             raise
 
     @task
+
+
     def transform():
         input_file = "data/extracted_data/data.json"
         train_dir = "data/train_data"
         test_dir = "data/test_data"
-    
-        # Process data
+        test_size = 0.1
+
         try:
             logger.info("Starting Data processing...")
-            train_df, test_df = data_transformation.process_data(
-                input_file_path=input_file,
-                train_output_dir=train_dir,
-                test_output_dir=test_dir
-            )
+        
+            with open(input_file, 'r') as f:
+                json_data = json.load(f)
+        
+            data_df = data_transformation.extract_data(json_data)
+            train_df, test_df = data_transformation.manual_train_test_split(data_df, test_size=test_size)
+            data_transformation.save_data(train_df, test_df, train_dir, test_dir)
             logger.info("Data processing completed successfully!")
+        
         except Exception as e:
             logger.error("Data processing failed!", exc_info=True)
             raise
+
 
     @task
     def load():

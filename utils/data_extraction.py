@@ -68,7 +68,7 @@ class JSONExporter:
             raise
 
 class DataGenerator:
-    def __init__(self, api_key=None, model="llama3-8b-8192", temperature=0.5):
+    def __init__(self, api_key=None, model="llama3-70b-8192", temperature=0.5):
         """Initialize the generator with API credentials and parameters"""
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.info("Initializing DataGenerator")
@@ -156,7 +156,7 @@ class DataGenerator:
         messages = [
             {
                 "role": "user",
-                "content": f'Now, generate a prompt/response pair for `{prompt}`. Do so in the exact format requested:\n```\n<prompt>prompt</prompt>\n<response>response_goes_here</response>\n```\n\nOnly one prompt/response pair should be generated per turn.'
+                "content": f'Now, generate a prompt/response pair for `{prompt}`. Do so in the exact format requested:\n```\n<prompt>prompt</prompt>\n<response>response_goes_here</response>\n```\n\nOnly one prompt/response pair should be generated per turn. Never miss the <prompt> & <response> tags'
             }
         ]
 
@@ -234,25 +234,30 @@ class DataGenerator:
         return df_unique
 
     def _extract_prompt_response(self, example):
-        """Extract prompt and response from an example"""
-        self.logger.debug("Extracting prompt and response from example")
         try:
             prompt_start = example.index('<prompt>') + len('<prompt>')
             prompt_end = example.index('</prompt>')
-            prompt = example[prompt_start:prompt_end].strip()
-
             response_start = example.index('<response>') + len('<response>')
-            response_end = example.index('</response>')
-            response = example[response_start:response_end].strip()
+        
+            # Check if '</response>' exists
+            if '</response>' in example:
+                response_end = example.index('</response>')
+                prompt = example[prompt_start:prompt_end].strip()
+                response = example[response_start:response_end].strip()
+                return prompt, response
+            else:
+                # Log a warning and skip if '</response>' tag is missing
+                logger.warning("Example missing '</response>' tag; skipping example.")
+                return None, None
 
-            return prompt, response
-        except (ValueError, IndexError) as e:
-            self.logger.error("Error extracting prompt/response", exc_info=True)
+        except ValueError as e:
+            logger.error(f"Error extracting prompt/response: {str(e)}")
             raise
 
 
+
 class Prompt:
-    """Class to handle the menu assessment prompt"""
+    """Class to handle the prompt"""
     def __init__(self):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.logger.info("Initializing Prompt")

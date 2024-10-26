@@ -1,90 +1,99 @@
 import pandas as pd
+import json
+import random
 import os
 from pathlib import Path
-import logging
 
-# Configure logging
-Path('logs').mkdir(exist_ok=True)
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('logs/data_transformer.log'),
-        logging.StreamHandler()
-    ]
-)
-logger = logging.getLogger(__name__)
-
-def process_data(input_file_path, train_output_dir, test_output_dir, random_state=42, train_fraction=0.9):
+def extract_data(json_data):
     """
-    Process data from a JSON file, split it into train/test sets, and save as JSONL files.
+    Extracts input_data and output_data from response field in JSON data.
     
     Args:
-        input_file_path (str): Path to input JSON file
-        train_output_dir (str): Directory for training data
-        test_output_dir (str): Directory for test data
-        random_state (int): Random seed for reproducibility
-        train_fraction (float): Fraction of data to use for training
+        json_data (list): List of JSON objects containing 'prompt' and 'response'
+        
+    Returns:
+        DataFrame: DataFrame with columns 'input_data' and 'output_data'
+    """
+    extracted_data = []
+    for item in json_data:
+        try:
+            response = json.loads(item['response'])
+            input_data = response.get('input_data')
+            output_data = response.get('output_data')
+            extracted_data.append({'input_data': input_data, 'output_data': output_data})
+        except json.JSONDecodeError:
+            print("Error decoding JSON in response field")
+    
+    return pd.DataFrame(extracted_data)
+
+def manual_train_test_split(data, test_size=0.1):
+    """
+    Splits data into training and testing sets without sklearn.
+    
+    Args:
+        data (DataFrame): Data to split
+        test_size (float): Proportion of the data to use as test set
     
     Returns:
-        tuple: (train_df, test_df) DataFrames containing the split data
+        Tuple: train and test DataFrames
     """
-    try:
-        # Create output directories if they don't exist
-        for directory in [train_output_dir, test_output_dir]:
-            Path(directory).mkdir(parents=True, exist_ok=True)
-            logger.info(f"Created directory: {directory}")
-        
-        # Read and process data
-        logger.info(f"Reading data from {input_file_path}")
-        df = pd.read_json(input_file_path)
-        df = df.drop_duplicates()
-        logger.info(f'Loaded {len(df)} unique examples')
-        
-        # Split data
-        train_df = df.sample(frac=train_fraction, random_state=random_state)
-        test_df = df.drop(train_df.index)
-        
-        logger.info(f'Split data into:')
-        logger.info(f'Training set: {len(train_df)} examples')
-        logger.info(f'Test set: {len(test_df)} examples')
-        
-        # Save files
-        train_path = os.path.join(train_output_dir, 'train.jsonl')
-        test_path = os.path.join(test_output_dir, 'test.jsonl')
-        
-        train_df.to_json(train_path, orient='records', lines=True)
-        test_df.to_json(test_path, orient='records', lines=True)
-        
-        logger.info(f'Saved training data to: {train_path}')
-        logger.info(f'Saved test data to: {test_path}')
-        
-        return train_df, test_df
-        
-    except FileNotFoundError:
-        logger.error(f"Error: Input file '{input_file_path}' not found.")
-        raise
-    except pd.errors.EmptyDataError:
-        logger.error(f"Error: The input file '{input_file_path}' is empty.")
-        raise
-    except Exception as e:
-        logger.error(f"An unexpected error occurred: {str(e)}")
-        raise
-
-# if __name__ == "__main__":
-#     # Configure paths
-#     input_file = "data/extracted_data/menu_examples.json"
-#     train_dir = "data/train_data"
-#     test_dir = "data/test_data"
+    # Shuffle the data
+    data = data.sample(frac=1, random_state=42).reset_index(drop=True)
     
-#     # Process data
-#     try:
-#         logger.info("Starting data processing...")
-#         train_df, test_df = process_data(
-#             input_file_path=input_file,
-#             train_output_dir=train_dir,
-#             test_output_dir=test_dir
-#         )
-#         logger.info("Data processing completed successfully!")
-#     except Exception as e:
-#         logger.error("Data processing failed!", exc_info=True)
+    # Calculate split index
+    split_index = int(len(data) * (1 - test_size))
+    
+    # Split the data
+    train_data = data.iloc[:split_index]
+    test_data = data.iloc[split_index:]
+    
+    return train_data, test_data
+
+def save_data(train_data, test_data, train_dir, test_dir):
+    """
+    Saves train and test DataFrames to JSONL files.
+    
+    Args:
+        train_data (DataFrame): Training data
+        test_data (DataFrame): Testing data
+        train_dir (str): Directory to save training data
+        test_dir (str): Directory to save testing data
+    """
+    train_path = os.path.join(train_dir, 'train.jsonl')
+    test_path = os.path.join(test_dir, 'test.jsonl')
+
+    Path(train_dir).mkdir(parents=True, exist_ok=True)
+    Path(test_dir).mkdir(parents=True, exist_ok=True)
+
+    train_data.to_json(train_path, orient='records', lines=True)
+    test_data.to_json(test_path, orient='records', lines=True)
+
+    print(f"Training data saved to {train_path}")
+    print(f"Test data saved to {test_path}")
+
+def main():
+
+    input_file = 'data/extracted_data/menu_examples.json'
+    train_dir = 'data/train_data'
+    test_dir = 'data/test_data'
+
+    # Load data
+    with open(input_file, 'r') as f:
+        json_data = json.load(f)
+    
+    # Extract input_data and output_data
+    data_df = extract_data(json_data)
+    
+    # Manual train-test split
+    train_df, test_df = manual_train_test_split(data_df)
+    
+    # Save train and test data
+    save_data(train_df, test_df, train_dir, test_dir)
+
+# # Example usage
+# if __name__ == "__main__":
+#     input_file = 'data/extracted_data/menu_examples.json'  # Replace with your input file path
+#     train_dir = 'data/train_data'
+#     test_dir = 'data/test_data'
+    
+#     main(input_file, train_dir, test_dir)
