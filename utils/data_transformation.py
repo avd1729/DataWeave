@@ -71,20 +71,20 @@ def process_data(input_file_path, train_output_dir, test_output_dir, random_stat
         logger.error(f"An unexpected error occurred: {str(e)}")
         raise
 
-if __name__ == "__main__":
-    # Configure paths
-    input_file = "data/extracted_data/menu_examples.json"
-    train_dir = "data/train_data"
-    test_dir = "data/test_data"
+# if __name__ == "__main__":
+#     # Configure paths
+#     input_file = "data/extracted_data/menu_examples.json"
+#     train_dir = "data/train_data"
+#     test_dir = "data/test_data"
     
-    # Process data
-    try:
-        logger.info("Starting data processing...")
-        train_df, test_df = process_data(
-            input_file_path=input_file,
-            train_output_dir=train_dir,
-            test_output_dir=test_dir
-        )
-        logger.info("Data processing completed successfully!")
-    except Exception as e:
-        logger.error("Data processing failed!", exc_info=True)
+#     # Process data
+#     try:
+#         logger.info("Starting data processing...")
+#         train_df, test_df = process_data(
+#             input_file_path=input_file,
+#             train_output_dir=train_dir,
+#             test_output_dir=test_dir
+#         )
+#         logger.info("Data processing completed successfully!")
+#     except Exception as e:
+#         logger.error("Data processing failed!", exc_info=True)

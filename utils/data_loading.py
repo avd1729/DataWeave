@@ -6,17 +6,18 @@ from urllib.parse import quote_plus
 import os
 from dotenv import load_dotenv
 
-def setup_logging():
-    """Configure logging for the script"""
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        handlers=[
-            logging.FileHandler('logs/data_loader.log'),
-            logging.StreamHandler()
-        ]
-    )
-    return logging.getLogger(__name__)
+load_dotenv()
+
+Path('logs').mkdir(exist_ok=True)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('logs/data_loader.log'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
 
 def connect_mongodb(connection_string):
     """
@@ -92,7 +93,7 @@ def main():
     """Main function to handle the import process"""
    
     connection_string = os.getenv("MONGODB_CONNECTION_STRING")
-    
+
     # File paths
     train_file = 'data/train_data/train.jsonl'
     test_file = 'data/test_data/test.jsonl'
@@ -128,9 +129,9 @@ def main():
             client.close()
             logger.info("Database connection closed")
 
-if __name__ == "__main__":
-    # Setup logging
-    logger = setup_logging()
+# if __name__ == "__main__":
+#     # Setup logging
+#     logger = setup_logging()
     
-    load_dotenv()
-    main()
+#     load_dotenv()
+#     main()

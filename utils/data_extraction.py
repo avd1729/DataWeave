@@ -21,6 +21,8 @@ logging.basicConfig(
 # logger = logging.getLogger(__name__)
 # logger.info("Starting Data extraction")
 
+logger = logging.getLogger(__name__)
+logger.info("Starting Data extraction")
 
 class JSONExporter:
     """Class to handle JSON file operations"""
@@ -265,35 +267,34 @@ class Prompt:
         self.logger.debug("Prompt initialized with content")
 
 
-def main():
-    logger = logging.getLogger(__name__)
-    logger.info("Starting main execution")
+# def main():
     
-    try:
-        # Initialize classes
-        prompt = Prompt()
-        generator = DataGenerator()
-        
-        # Generate examples and save to JSON
-        df, json_path = generator.generate_and_save_examples(
-            prompt=prompt.prompt,
-            number_of_examples=5,
-            filename="menu_examples.json"
-        )
-        
-        # Display results
-        logger.info(f'Generated {len(df)} unique examples')
-        print(f'\nGenerated {len(df)} unique examples. Here are the first few:')
-        print(df.head())
-        print(f'\nData saved to: {json_path}')
-        
-        logger.info("Main execution completed successfully")
-        return df, json_path
     
-    except Exception as e:
-        logger.error("Main execution failed", exc_info=True)
-        raise
+#     try:
+#         # Initialize classes
+#         prompt = Prompt()
+#         generator = DataGenerator()
+        
+#         # Generate examples and save to JSON
+#         df, json_path = generator.generate_and_save_examples(
+#             prompt=prompt.prompt,
+#             number_of_examples=5,
+#             filename="menu_examples.json"
+#         )
+        
+#         # Display results
+#         logger.info(f'Generated {len(df)} unique examples')
+#         print(f'\nGenerated {len(df)} unique examples. Here are the first few:')
+#         print(df.head())
+#         print(f'\nData saved to: {json_path}')
+        
+#         logger.info("Main execution completed successfully")
+#         return df, json_path
+    
+#     except Exception as e:
+#         logger.error("Main execution failed", exc_info=True)
+#         raise
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
