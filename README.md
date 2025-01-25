@@ -3,6 +3,8 @@
 ## Overview
 Synthetic dataset generator using Apache Airflow and Groq open-source models, designed to generate and load data into MongoDB collections.
 
+![image](https://github.com/user-attachments/assets/1ade1756-165d-4428-a587-1f4422824335)
+
 
 ## Project Core Values
 - **Intelligent Data Generation**: Leveraging AI for synthetic dataset creation
