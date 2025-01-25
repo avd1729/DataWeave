@@ -13,11 +13,11 @@ Synthetic dataset generator using Apache Airflow and Groq open-source models for
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/synthetic-dataset-generator.git
+git clone https://github.com/avd1729/DataWeave.git
 
 # Create virtual environment
-python -m venv venv
-source venv/bin/activate
+virtualenv venv
+venv/Scripts/Activate
 
 # Install dependencies
 pip install -r requirements.txt
