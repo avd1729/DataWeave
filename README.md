@@ -1,7 +1,7 @@
 # DataWeave
 
 ## Overview
-Synthetic dataset generator using Apache Airflow and Groq open-source models for data generation.
+Synthetic dataset generator using Apache Airflow and Groq open-source models for data generation and loads it to a MongoDB collection.
 
 ## Prerequisites
 - Python 3.8+
@@ -57,12 +57,3 @@ synthetic-dataset-generator/
 └── requirements.txt
 ```
 
-## Contributing
-1. Fork the repository
-2. Create feature branch
-3. Commit changes
-4. Push to branch
-5. Create pull request
-
-## License
-MIT License
