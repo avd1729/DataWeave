@@ -71,6 +71,63 @@ dataweave/
 - Parameterized generation based on predefined schemas
 - Support for multiple data domain generations
 
+
+## Custom Data Generation
+
+### Modifying Prompt Class
+To generate custom datasets, modify the `Prompt` class in `data_extraction.py`:
+
+```python
+class Prompt:
+    def __init__(self):
+        self.prompt = """
+        [Your Custom Prompt Here]
+        
+        Ensure the prompt includes:
+        - Structured data requirements
+        - Specific domain context
+        - Output format specifications
+        """
+```
+
+### Prompt Design Guidelines
+1. **Specificity**: Clearly define data structure
+2. **Context**: Provide domain-specific details
+3. **Format**: Specify JSON or desired output format
+4. **Complexity**: Include nuanced generation requirements
+
+### Example Customization Scenarios
+- **Healthcare**: Patient record generation
+- **Financial**: Transaction simulation
+- **IoT**: Sensor data creation
+- **Urban Planning**: Population movement modeling
+
+### Best Practices
+- Use clear, descriptive language
+- Specify exact data fields
+- Define constraints and uniqueness rules
+- Include contextual parameters
+
+### Prompt Engineering Tips
+- Break down complex requirements
+- Use JSON schema as a reference
+- Provide example output structures
+- Specify randomization or pattern requirements
+
+## Advanced Customization
+Extend the `Prompt` class with:
+- Dynamic prompt generation methods
+- Conditional data creation logic
+- Domain-specific validation rules
+
+## Example Use Case
+```python
+# Custom Prompt for E-commerce User Behavior
+prompt.prompt = """
+Generate synthetic user interaction data for an e-commerce platform...
+"""
+```
+
 ## Running the Project
 ```bash
 # Start Airflow development environment
