@@ -1,4 +1,4 @@
-# Synthetic Dataset Generator
+# DataWeave
 
 ## Overview
 Synthetic dataset generator using Apache Airflow and Groq open-source models for data generation.
@@ -7,8 +7,7 @@ Synthetic dataset generator using Apache Airflow and Groq open-source models for
 - Python 3.8+
 - Apache Airflow 2.x
 - Groq API access
-- Pandas
-- NumPy
+- Mongo DB 
 
 ## Installation
 
